@@ -168,6 +168,15 @@ const IMG = {
 };
 const $ = s => document.querySelector(s);
 const app = $("#app");
+/* --- アクセス計測（GoatCounter：Cookieなし・個人情報なし／2026-10-26 広告の効果測定用）
+   GC に GoatCounter のサイトコードを入れると、公開ページ（*.github.io）でだけ数える。空なら何もしない（プレビュー・E2Eも数えない）。
+   数えるもの＝①ページを開いた回数（どこから来たか。広告のURLには ?utm_source=yt-ad などをつける）
+             ②結果画面まで解いた回数（qup-seikei-NN/done-<章や種類>）③ラボを開いた回数（qup-seikei-NN/lab） --- */
+const GC = "qup-seikei";
+const LIVE = !!GC && /\.github\.io$/.test(location.hostname);
+if (LIVE) { const s = document.createElement("script"); s.async = true; s.dataset.goatcounter = `https://${GC}.goatcounter.com/count`; s.src = "https://gc.zgo.at/count.js"; document.head.appendChild(s); }
+const REPO = location.pathname.split("/")[1] || "local";
+function track(name) { try { if (LIVE && window.goatcounter && window.goatcounter.count) window.goatcounter.count({ path: `${REPO}/${name}`, title: name, event: true }); } catch (e) { /* 計測の失敗で学習を止めない */ } }
 const shuffle = a => { a = a.slice(); for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; };
 const mmss = t => Math.floor(t / 60) + ":" + String(t % 60).padStart(2, "0");
 const NO = ["①", "②", "③", "④", "⑤", "⑥", "⑦", "⑧"];
@@ -702,6 +711,7 @@ function retryWrong(list, opt) {
 function resultScreen(res, opt) {
   const ok = res.filter(r => r.ok).length, n = res.length, pc = Math.round(ok / n * 100);
   const wrong = res.filter(r => !r.ok);
+  track("done-" + (opt.retry ? "retry" : opt.sec || "other"));
   const r = opt.sec ? record(opt.sec, ok, n) : null;
   if (opt.sec === "test" && pc >= 70) markDone("test");
   const ansOf = q => q.k === "mc" ? (q.ky ? NO[q.a] + " " : "") + q.c[q.a] : q.k === "tf" ? (q.a ? "○" : "×") : q.items.join(" → ");
@@ -738,6 +748,7 @@ function resultScreen(res, opt) {
    UNIT.lab.modes = [{ label, run(el) }（自由に動かす）| { label, game: {...} }（仕分けゲーム）]
    上にモード切替ボタン（①②…）、下に中身。ゲームは全単元で sortGame を使う。 --- */
 function lab() {
+  track("lab");
   screen(`<div class="card pop"><div class="stage">${UNIT.lab.icon} ${UNIT.lab.title}</div><div id="labx"></div></div>
     <button class="btn sub" onclick="home()">ホームにもどる</button>`);
   const L = UNIT.lab; let mode = 0, stop = null;
